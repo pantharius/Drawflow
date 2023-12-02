@@ -1227,23 +1227,51 @@ export default class Drawflow {
       content.innerHTML = html;
     } else if (typenode === true) {
       content.appendChild(this.noderegister[html].html.cloneNode(true));
-    } else {
-      if(parseInt(this.render.version) === 3 ) {
-        //Vue 3
-        let wrapper = this.render.h(this.noderegister[html].html, this.noderegister[html].props, this.noderegister[html].options);
-        wrapper.appContext = this.parent;
-        this.render.render(wrapper,content);
+    } else if(typenode === "svelte") {
+      const node = this.noderegister[html];
+      const NodeComponent = node.html;
+      try {
+        let comp = new NodeComponent({
+          target: content,
+          props: {...node.props,nodeid:newNodeId}
+        });
+        
+        if(comp && comp.inputs && Object.entries(comp.inputs).length>0){
+          for (const [inputkey,inputname] of Object.entries(comp.inputs)) {
+            const input = document.createElement('div');
+            input.classList.add("input");
+            input.classList.add("input_"+inputkey);
+            input.style = `--input-name:"${inputname}";`;
+            json_inputs["input_"+inputkey] = { "connections": [], 'name': inputname };
+            inputs.appendChild(input);
+          }
+        }
+        if(comp && comp.outputs && Object.entries(comp.outputs).length>0){
+          for (const [outputkey,outputname] of Object.entries(comp.outputs)) {
+            const output = document.createElement('div');
+            output.classList.add("output");
+            output.classList.add("output_"+outputkey);
+            output.style = `--output-name:"${outputname}";`;
+            json_outputs["output_"+outputkey] = { "connections": [], 'name': outputname };
+            outputs.appendChild(output);
+          }
+        }
+      } catch (e) { /* ... */ }
+    } else if(parseInt(this.render.version) === 3 ) {
+      //Vue 3
+      let wrapper = this.render.h(this.noderegister[html].html, this.noderegister[html].props, this.noderegister[html].options);
+      wrapper.appContext = this.parent;
+      this.render.render(wrapper,content);
 
-      } else {
-        // Vue 2
-        let wrapper = new this.render({
-          parent: this.parent,
-          render: h => h(this.noderegister[html].html, { props: this.noderegister[html].props }),
-          ...this.noderegister[html].options
-        }).$mount()
-        //
-        content.appendChild(wrapper.$el);
-      }
+    } else {
+      // Vue 2
+      let wrapper = new this.render({
+        parent: this.parent,
+        render: h => h(this.noderegister[html].html, { props: this.noderegister[html].props }),
+        ...this.noderegister[html].options
+      }).$mount()
+      //
+      content.appendChild(wrapper.$el);
     }
 
     Object.entries(data).forEach(function (key, value) {
@@ -1327,34 +1355,37 @@ export default class Drawflow {
     const outputs = document.createElement('div');
     outputs.classList.add("outputs");
 
-    Object.keys(dataNode.inputs).map(function(input_item, index) {
+    for (const [input_item, input_value] of Object.entries(dataNode.inputs)) {
       const input = document.createElement('div');
       input.classList.add("input");
       input.classList.add(input_item);
+      input.style = `--input-name:"${input_value.name}";`;
       inputs.appendChild(input);
-      Object.keys(dataNode.inputs[input_item].connections).map(function(output_item, index) {
+      
+      for (const conn of input_value.connections) {
 
-        var connection = document.createElementNS('http://www.w3.org/2000/svg',"svg");
-        var path = document.createElementNS('http://www.w3.org/2000/svg',"path");
+        const connection = document.createElementNS('http://www.w3.org/2000/svg',"svg");
+        const path = document.createElementNS('http://www.w3.org/2000/svg',"path");
         path.classList.add("main-path");
         path.setAttributeNS(null, 'd', '');
         // path.innerHTML = 'a';
         connection.classList.add("connection");
         connection.classList.add("node_in_node-"+dataNode.id);
-        connection.classList.add("node_out_node-"+dataNode.inputs[input_item].connections[output_item].node);
-        connection.classList.add(dataNode.inputs[input_item].connections[output_item].input);
+        connection.classList.add("node_out_node-"+conn.node);
+        connection.classList.add(conn.input);
         connection.classList.add(input_item);
 
         connection.appendChild(path);
         precanvas.appendChild(connection);
+      };
+    };
 
-      });
-    });
 
-    for(var x = 0; x < Object.keys(dataNode.outputs).length; x++) {
+    for (const [outputkey,outputvalue] of Object.entries(dataNode.outputs)) {
       const output = document.createElement('div');
       output.classList.add("output");
-      output.classList.add("output_"+(x+1));
+      output.classList.add(outputkey);
+      output.style = `--output-name:"${outputvalue.name}";`;
       outputs.appendChild(output);
     }
 
@@ -1365,22 +1396,29 @@ export default class Drawflow {
       content.innerHTML = dataNode.html;
     } else if (dataNode.typenode === true) {
       content.appendChild(this.noderegister[dataNode.html].html.cloneNode(true));
-    } else {
-      if(parseInt(this.render.version) === 3 ) {
-        //Vue 3
-        let wrapper = this.render.h(this.noderegister[dataNode.html].html, this.noderegister[dataNode.html].props, this.noderegister[dataNode.html].options);
-        wrapper.appContext = this.parent;
-        this.render.render(wrapper,content);
+    } else if(dataNode.typenode === "svelte") {
+      const node = this.noderegister[dataNode.html];
+      const NodeComponent = node.html;
+      try {
+        new NodeComponent({
+          target: content,
+          props: {...node.props,nodeid:dataNode.id}
+        });
+      } catch (e) { /* ... */ }
+    } else if(parseInt(this.render.version) === 3 ) {
+      //Vue 3
+      let wrapper = this.render.h(this.noderegister[dataNode.html].html, this.noderegister[dataNode.html].props, this.noderegister[dataNode.html].options);
+      wrapper.appContext = this.parent;
+      this.render.render(wrapper,content);
 
-      } else {
-        //Vue 2
-        let wrapper = new this.render({
-          parent: this.parent,
-          render: h => h(this.noderegister[dataNode.html].html, { props: this.noderegister[dataNode.html].props }),
-          ...this.noderegister[dataNode.html].options
-        }).$mount()
-        content.appendChild(wrapper.$el);
-      }
+    } else {
+      //Vue 2
+      let wrapper = new this.render({
+        parent: this.parent,
+        render: h => h(this.noderegister[dataNode.html].html, { props: this.noderegister[dataNode.html].props }),
+        ...this.noderegister[dataNode.html].options
+      }).$mount()
+      content.appendChild(wrapper.$el);
     }
 
     Object.entries(dataNode.data).forEach(function (key, value) {

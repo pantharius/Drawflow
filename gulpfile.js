@@ -17,8 +17,15 @@ gulp.task('css', () => {
   .pipe(gulp.dest('dist/'))
 });
 
+gulp.task('js', () => {
+  return gulp.src('src/drawflow.js')
+  .pipe(concat('drawflow.min.js'))
+  .pipe(gulp.dest('dist/'))
+});
+
 gulp.task('default', gulp.series(
     'css', 
-    'style'
+    'style',
+    'js'
   )
 );
