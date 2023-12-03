@@ -178,7 +178,7 @@ export default class Drawflow {
     if(this.editor_mode === 'fixed') {
       //return false;
        e.preventDefault();
-       if(e.target.classList[0] === 'parent-drawflow' || e.target.classList[0] === 'drawflow') {
+       if([...e.target.classList].some(c=>c==='parent-drawflow'||c==='drawflow')) {
          this.ele_selected = e.target.closest(".parent-drawflow");
        } else {
          return false;
@@ -280,9 +280,9 @@ export default class Drawflow {
         }
         this.connection_selected = this.ele_selected;
         this.connection_selected.classList.add("selected");
-        const listclassConnection = this.connection_selected.parentElement.classList;
-        if(listclassConnection.length > 1){
-          this.dispatch('connectionSelected', { output_id: listclassConnection[2].slice(14), input_id: listclassConnection[1].slice(13), output_class: listclassConnection[3], input_class: listclassConnection[4] });
+        const getClassStartsWith = (classStart) => [...this.connection_selected.parentElement.classList].find(c=>c.startsWith(classStart));
+        if(getClassStartsWith('')){
+          this.dispatch('connectionSelected', { output_id: getClassStartsWith("node_out_node-").slice(14), input_id: getClassStartsWith("node_in_node-").slice(13), output_class: getClassStartsWith("output_"), input_class: getClassStartsWith("input_") });
           if(this.reroute_fix_curvature) {
             this.connection_selected.parentElement.querySelectorAll(".main-path").forEach((item, i) => {
               item.classList.add("selected");
@@ -384,10 +384,11 @@ export default class Drawflow {
       this.ele_selected.setAttributeNS(null, 'cx', pos_x);
       this.ele_selected.setAttributeNS(null, 'cy', pos_y);
 
-      const nodeUpdate = this.ele_selected.parentElement.classList[2].slice(9);
-      const nodeUpdateIn = this.ele_selected.parentElement.classList[1].slice(13);
-      const output_class = this.ele_selected.parentElement.classList[3];
-      const input_class = this.ele_selected.parentElement.classList[4];
+      const getClassStartsWith = (classStart) => [...this.ele_selected.parentElement.classList].find(c=>c.startsWith(classStart));
+      const nodeUpdate = getClassStartsWith("node_out_node-").slice(9);
+      const nodeUpdateIn = getClassStartsWith("node_in_node-").slice(13);
+      const output_class = getClassStartsWith("output_");
+      const input_class = getClassStartsWith("input_");
 
       let numberPointPosition = Array.from(this.ele_selected.parentElement.children).indexOf(this.ele_selected)-1;
 
@@ -405,8 +406,8 @@ export default class Drawflow {
       });
 
       this.drawflow.drawflow[this.module].data[nodeId].outputs[output_class].connections[searchConnection].points[numberPointPosition] = { pos_x: pos_x, pos_y: pos_y };
-
-      const parentSelected = this.ele_selected.parentElement.classList[2].slice(9);
+      
+      const parentSelected = [...this.ele_selected.parentElement.classList].find(c=>c.startsWith("node_out_node-")).slice(9);
 
       this.updateConnectionNodes(parentSelected);
     }
@@ -438,7 +439,7 @@ export default class Drawflow {
     if(this.drag_point) {
       this.ele_selected.classList.remove("selected");
         if(this.pos_x_start != e_pos_x || this.pos_y_start != e_pos_y) {
-          this.dispatch('rerouteMoved', this.ele_selected.parentElement.classList[2].slice(14));
+          this.dispatch('rerouteMoved', [...this.ele_selected.parentElement.classList].find(c=>c.startsWith("node_out_node-")).slice(14));
         }
     }
 
@@ -447,60 +448,69 @@ export default class Drawflow {
       this.canvas_y = this.canvas_y + (-(this.pos_y - e_pos_y));
       this.editor_selected = false;
     }
-    if(this.connection === true) {
-      if(ele_last.classList[0] === 'input' || (this.force_first_input && (ele_last.closest(".drawflow_content_node") != null || ele_last.classList[0] === 'drawflow-node'))) {
+    if (this.connection === true) {
+      let input_class;
+      let in_io_class = "";
+      if (ele_last.classList[0] === 'input' || (this.force_first_input && (ele_last.closest(".drawflow_content_node") != null || ele_last.classList[0] === 'drawflow-node'))) {
 
-        if(this.force_first_input && (ele_last.closest(".drawflow_content_node") != null || ele_last.classList[0] === 'drawflow-node')) {
-          if(ele_last.closest(".drawflow_content_node") != null) {
+        if (this.force_first_input && (ele_last.closest(".drawflow_content_node") != null || ele_last.classList[0] === 'drawflow-node')) {
+          if (ele_last.closest(".drawflow_content_node") != null) {
             var input_id = ele_last.closest(".drawflow_content_node").parentElement.id;
           } else {
             var input_id = ele_last.id;
           }
-         if(Object.keys(this.getNodeFromId(input_id.slice(5)).inputs).length === 0) {
-           var input_class = false;
-         } else {
-          var input_class = "input_1";
-         }
+          if (Object.keys(this.getNodeFromId(input_id.slice(5)).inputs).length === 0) {
+            input_class = false;
+          } else {
+            input_class = "input_1";
+          }
 
-
-       } else {
-         // Fix connection;
-         var input_id = ele_last.parentElement.parentElement.id;
-         var input_class = ele_last.classList[1];
-       }
-       var output_id = this.ele_selected.parentElement.parentElement.id;
-       var output_class = this.ele_selected.classList[1];
-
-        if(output_id !== input_id && input_class !== false) {
-
-          if(this.container.querySelectorAll('.connection.node_in_'+input_id+'.node_out_'+output_id+'.'+output_class+'.'+input_class).length === 0) {
-          // Conection no exist save connection
-
-          this.connection_ele.classList.add("node_in_"+input_id);
-          this.connection_ele.classList.add("node_out_"+output_id);
-          this.connection_ele.classList.add(output_class);
-          this.connection_ele.classList.add(input_class);
-          var id_input = input_id.slice(5);
-          var id_output = output_id.slice(5);
-
-          this.drawflow.drawflow[this.module].data[id_output].outputs[output_class].connections.push( {"node": id_input, "output": input_class});
-          this.drawflow.drawflow[this.module].data[id_input].inputs[input_class].connections.push( {"node": id_output, "input": output_class});
-          this.updateConnectionNodes('node-'+id_output);
-          this.updateConnectionNodes('node-'+id_input);
-          this.dispatch('connectionCreated', { output_id: id_output, input_id: id_input, output_class:  output_class, input_class: input_class});
 
         } else {
-          this.dispatch('connectionCancel', true);
-          this.connection_ele.remove();
+          // Fix connection;
+          var input_id = ele_last.parentElement.parentElement.id;
+          input_class = [...ele_last.classList].find(c => c.startsWith("input_"));
+          in_io_class = [...ele_last.classList].find(c => c.startsWith("io_")).slice(3);
         }
+        var output_id = this.ele_selected.parentElement.parentElement.id;
+        var output_class = [...this.ele_selected.classList].find(c => c.startsWith("output_"));
+
+        if (output_id !== input_id && input_class !== false) {
+          if (this.container.querySelectorAll('.connection.node_in_' + input_id + '.node_out_' + output_id + '.' + output_class + '.' + input_class).length === 0) {
+
+            let ioclass = [...this.connection_ele.classList].find(c => c.startsWith("io_")).slice(3);
+            if(isOutputCompatible(in_io_class,ioclass)) {
+              // Conection no exist save connection
+
+              this.connection_ele.classList.add("node_in_" + input_id);
+              this.connection_ele.classList.add("node_out_" + output_id);
+              this.connection_ele.classList.add(output_class);
+              this.connection_ele.classList.add(input_class);
+              var id_input = input_id.slice(5);
+              var id_output = output_id.slice(5);
+
+              this.drawflow.drawflow[this.module].data[id_output].outputs[output_class].connections.push({ "node": id_input, "output": input_class });
+              this.drawflow.drawflow[this.module].data[id_input].inputs[input_class].connections.push({ "node": id_output, "input": output_class });
+              this.updateConnectionNodes('node-' + id_output);
+              this.updateConnectionNodes('node-' + id_input);
+              this.dispatch('connectionCreated', { output_id: id_output, input_id: id_input, output_class: output_class, input_class: input_class });
+            }else{
+              console.error(`CONNECTION IMPOSSIBLE, TYPES DIFFERENTS: ioclass:${ioclass}, in_io_class:${in_io_class}`);
+              this.dispatch('connectionCancel', true);
+              this.connection_ele.remove();
+            }
+          } else {
+            this.dispatch('connectionCancel', true);
+            this.connection_ele.remove();
+          }
 
           this.connection_ele = null;
-      } else {
-        // Connection exists Remove Connection;
-        this.dispatch('connectionCancel', true);
-        this.connection_ele.remove();
-        this.connection_ele = null;
-      }
+        } else {
+          // Connection exists Remove Connection;
+          this.dispatch('connectionCancel', true);
+          this.connection_ele.remove();
+          this.connection_ele = null;
+        }
 
       } else {
         // Remove Connection;
@@ -667,9 +677,10 @@ export default class Drawflow {
     connection.appendChild(path);
     this.precanvas.appendChild(connection);
     var id_output = ele.parentElement.parentElement.id.slice(5);
-    var output_class = ele.classList[1];
-    this.dispatch('connectionStart', { output_id: id_output, output_class:  output_class });
-
+    var output_class = [...ele.classList].find(c=>c.startsWith("output_"));
+    var io_class = [...ele.classList].find(c=>c.startsWith("io_"));
+    connection.classList.add(io_class);
+    this.dispatch('connectionStart', { output_id: id_output, output_class, io_class });
   }
 
   updateConnection(eX, eY) {
@@ -708,29 +719,36 @@ export default class Drawflow {
       }
       // Check connection exist
       if(exist === false) {
-        //Create Connection
-        this.drawflow.drawflow[nodeOneModule].data[id_output].outputs[output_class].connections.push( {"node": id_input.toString(), "output": input_class});
-        this.drawflow.drawflow[nodeOneModule].data[id_input].inputs[input_class].connections.push( {"node": id_output.toString(), "input": output_class});
 
-        if(this.module === nodeOneModule) {
-        //Draw connection
-          var connection = document.createElementNS('http://www.w3.org/2000/svg',"svg");
-          var path = document.createElementNS('http://www.w3.org/2000/svg',"path");
-          path.classList.add("main-path");
-          path.setAttributeNS(null, 'd', '');
-          // path.innerHTML = 'a';
-          connection.classList.add("connection");
-          connection.classList.add("node_in_node-"+id_input);
-          connection.classList.add("node_out_node-"+id_output);
-          connection.classList.add(output_class);
-          connection.classList.add(input_class);
-          connection.appendChild(path);
-          this.precanvas.appendChild(connection);
-          this.updateConnectionNodes('node-'+id_output);
-          this.updateConnectionNodes('node-'+id_input);
+        const outType = this.drawflow.drawflow[nodeOneModule].data[id_output].outputs[output_class].type;
+        const inType = this.drawflow.drawflow[nodeOneModule].data[id_input].inputs[input_class].type;
+        
+        if(isOutputCompatible(inType,outType)){
+          //Create Connection
+          this.drawflow.drawflow[nodeOneModule].data[id_output].outputs[output_class].connections.push( {"node": id_input.toString(), "output": input_class});
+          this.drawflow.drawflow[nodeOneModule].data[id_input].inputs[input_class].connections.push( {"node": id_output.toString(), "input": output_class});
+
+          if(this.module === nodeOneModule) {
+          //Draw connection
+            var connection = document.createElementNS('http://www.w3.org/2000/svg',"svg");
+            var path = document.createElementNS('http://www.w3.org/2000/svg',"path");
+            path.classList.add("main-path");
+            path.setAttributeNS(null, 'd', '');
+            // path.innerHTML = 'a';
+            connection.classList.add("connection");
+            connection.classList.add("node_in_node-"+id_input);
+            connection.classList.add("node_out_node-"+id_output);
+            connection.classList.add(output_class);
+            connection.classList.add(input_class);
+            connection.appendChild(path);
+            this.precanvas.appendChild(connection);
+            this.updateConnectionNodes('node-'+id_output);
+            this.updateConnectionNodes('node-'+id_input);
+          }
+
+          this.dispatch('connectionCreated', { output_id: id_output, input_id: id_input, output_class:  output_class, input_class: input_class});
+        
         }
-
-        this.dispatch('connectionCreated', { output_id: id_output, input_id: id_input, output_class:  output_class, input_class: input_class});
       }
     }
   }
@@ -762,15 +780,15 @@ export default class Drawflow {
 
         var elemtsearchId_out = container.querySelector(`#${id}`);
 
-        var id_search = elemsOut[item].classList[1].replace('node_in_', '');
+        var id_search = [...elemsOut[item].classList].find(c=>c.startsWith("node_in_")).replace('node_in_', '');
         var elemtsearchId = container.querySelector(`#${id_search}`);
 
-        var elemtsearch = elemtsearchId.querySelectorAll('.'+elemsOut[item].classList[4])[0]
+        var elemtsearch = elemtsearchId.querySelectorAll('.'+[...elemsOut[item].classList].find(c=>c.startsWith("input_")))[0]
 
         var eX = elemtsearch.offsetWidth/2 + (elemtsearch.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
         var eY = elemtsearch.offsetHeight/2 + (elemtsearch.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
-        var elemtsearchOut = elemtsearchId_out.querySelectorAll('.'+elemsOut[item].classList[3])[0]
+        var elemtsearchOut = elemtsearchId_out.querySelectorAll('.'+[...elemsOut[item].classList].find(c=>c.startsWith("output_")))[0]
 
         var line_x =  elemtsearchOut.offsetWidth/2 + (elemtsearchOut.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
         var line_y =  elemtsearchOut.offsetHeight/2 + (elemtsearchOut.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
@@ -793,7 +811,7 @@ export default class Drawflow {
             var eX =  (elemtsearch.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom + rerouteWidth;
             var eY =  (elemtsearch.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom + rerouteWidth;
 
-            var elemtsearchOut = elemtsearchId_out.querySelectorAll('.'+item.parentElement.classList[3])[0]
+            var elemtsearchOut = elemtsearchId_out.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("output_")))[0]
             var line_x =  elemtsearchOut.offsetWidth/2 + (elemtsearchOut.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var line_y =  elemtsearchOut.offsetHeight/2 + (elemtsearchOut.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
             var x = eX;
@@ -804,11 +822,11 @@ export default class Drawflow {
             reoute_fix.push(lineCurveSearch);
 
             var elemtsearchId_out = item;
-            var id_search = item.parentElement.classList[1].replace('node_in_', '');
+            var id_search = [...item.parentElement.classList].find(c=>c.startsWith("node_in_")).replace('node_in_', '');
             var elemtsearchId = container.querySelector(`#${id_search}`);
-            var elemtsearch = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[4])[0]
+            var elemtsearch = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("input_")))[0]
 
-            var elemtsearchIn = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[4])[0]
+            var elemtsearchIn = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("input_")))[0]
             var eX =  elemtsearchIn.offsetWidth/2 + (elemtsearchIn.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var eY =  elemtsearchIn.offsetHeight/2 + (elemtsearchIn.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
@@ -830,7 +848,7 @@ export default class Drawflow {
             var eX = (elemtsearch.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom + rerouteWidth;
             var eY = (elemtsearch.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom + rerouteWidth;
 
-            var elemtsearchOut = elemtsearchId_out.querySelectorAll('.'+item.parentElement.classList[3])[0]
+            var elemtsearchOut = elemtsearchId_out.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("output_")))[0]
             var line_x =  elemtsearchOut.offsetWidth/2 + (elemtsearchOut.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var line_y =  elemtsearchOut.offsetHeight/2 + (elemtsearchOut.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
@@ -860,11 +878,11 @@ export default class Drawflow {
 
             var elemtsearchId_out = item;
 
-            var id_search = item.parentElement.classList[1].replace('node_in_', '');
+            var id_search = [...item.parentElement.classList].find(c=>c.startsWith("node_in_")).replace('node_in_', '');
             var elemtsearchId = container.querySelector(`#${id_search}`);
-            var elemtsearch = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[4])[0]
+            var elemtsearch = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("input_")))[0]
 
-            var elemtsearchIn = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[4])[0]
+            var elemtsearchIn = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("input_")))[0]
             var eX =  elemtsearchIn.offsetWidth/2 + (elemtsearchIn.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var eY =  elemtsearchIn.offsetHeight/2 + (elemtsearchIn.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
             var line_x = (elemtsearchId_out.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * (precanvas.clientWidth / (precanvas.clientWidth * zoom)) + rerouteWidth;
@@ -911,14 +929,14 @@ export default class Drawflow {
       if(elems[item].querySelector('.point') === null) {
         var elemtsearchId_in = container.querySelector(`#${id}`);
 
-        var id_search = elems[item].classList[2].replace('node_out_', '');
+        var id_search = [...elems[item].classList].find(c=>c.startsWith("node_out_")).replace('node_out_', '');
         var elemtsearchId = container.querySelector(`#${id_search}`);
-        var elemtsearch = elemtsearchId.querySelectorAll('.'+elems[item].classList[3])[0]
+        var elemtsearch = elemtsearchId.querySelectorAll('.'+[...elems[item].classList].find(c=>c.startsWith("output_")))[0]
 
         var line_x = elemtsearch.offsetWidth/2 + (elemtsearch.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
         var line_y = elemtsearch.offsetHeight/2 + (elemtsearch.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
-        var elemtsearchId_in = elemtsearchId_in.querySelectorAll('.'+elems[item].classList[4])[0]
+        var elemtsearchId_in = elemtsearchId_in.querySelectorAll('.'+[...elems[item].classList].find(c=>c.startsWith("input_")))[0]
         var x = elemtsearchId_in.offsetWidth/2 + (elemtsearchId_in.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
         var y = elemtsearchId_in.offsetHeight/2 + (elemtsearchId_in.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
@@ -938,7 +956,7 @@ export default class Drawflow {
             var line_x = (elemtsearch.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom + rerouteWidth;
             var line_y = (elemtsearch.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom +rerouteWidth;
 
-            var elemtsearchIn = elemtsearchId_out.querySelectorAll('.'+item.parentElement.classList[4])[0]
+            var elemtsearchIn = elemtsearchId_out.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("input_")))[0]
             var eX =  elemtsearchIn.offsetWidth/2 + (elemtsearchIn.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var eY =  elemtsearchIn.offsetHeight/2 + (elemtsearchIn.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
@@ -950,11 +968,11 @@ export default class Drawflow {
             reoute_fix.push(lineCurveSearch);
 
             var elemtsearchId_out = item;
-            var id_search = item.parentElement.classList[2].replace('node_out_', '');
+            var id_search = [...item.parentElement.classList].find(c=>c.startsWith("node_out_")).replace('node_out_', '');
             var elemtsearchId = container.querySelector(`#${id_search}`);
-            var elemtsearch = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[3])[0]
+            var elemtsearch = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("output_")))[0]
 
-            var elemtsearchOut = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[3])[0]
+            var elemtsearchOut = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("output_")))[0]
             var line_x =  elemtsearchOut.offsetWidth/2 + (elemtsearchOut.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var line_y =  elemtsearchOut.offsetHeight/2 + (elemtsearchOut.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
@@ -971,10 +989,10 @@ export default class Drawflow {
           } else if(i === 0) {
             // FIRST
             var elemtsearchId_out = item;
-            var id_search = item.parentElement.classList[2].replace('node_out_', '');
+            var id_search = [...item.parentElement.classList].find(c=>c.startsWith("node_out_")).replace('node_out_', '');
             var elemtsearchId = container.querySelector(`#${id_search}`);
-            var elemtsearch = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[3])[0]
-            var elemtsearchOut = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[3])[0]
+            var elemtsearch = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("output_")))[0]
+            var elemtsearchOut = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("output_")))[0]
             var line_x =  elemtsearchOut.offsetWidth/2 + (elemtsearchOut.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var line_y =  elemtsearchOut.offsetHeight/2 + (elemtsearchOut.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
@@ -1006,11 +1024,11 @@ export default class Drawflow {
 
             var elemtsearchId_out = item;
 
-            var id_search = item.parentElement.classList[1].replace('node_in_', '');
+            var id_search = [...item.parentElement.classList].find(c=>c.startsWith("node_in_")).replace('node_in_', '');
             var elemtsearchId = container.querySelector(`#${id_search}`);
-            var elemtsearch = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[4])[0]
+            var elemtsearch = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("input_")))[0]
 
-            var elemtsearchIn = elemtsearchId.querySelectorAll('.'+item.parentElement.classList[4])[0]
+            var elemtsearchIn = elemtsearchId.querySelectorAll('.'+[...item.parentElement.classList].find(c=>c.startsWith("input_")))[0]
             var eX =  elemtsearchIn.offsetWidth/2 + (elemtsearchIn.getBoundingClientRect().x - precanvas.getBoundingClientRect().x ) * precanvasWitdhZoom;
             var eY =  elemtsearchIn.offsetHeight/2 + (elemtsearchIn.getBoundingClientRect().y - precanvas.getBoundingClientRect().y ) * precanvasHeightZoom;
 
@@ -1066,10 +1084,11 @@ export default class Drawflow {
 
   createReroutePoint(ele) {
       this.connection_selected.classList.remove("selected");
-      const nodeUpdate = this.connection_selected.parentElement.classList[2].slice(9);
-      const nodeUpdateIn = this.connection_selected.parentElement.classList[1].slice(13);
-      const output_class = this.connection_selected.parentElement.classList[3];
-      const input_class = this.connection_selected.parentElement.classList[4];
+      const getClassStartsWith = (classStart) => [...this.connection_selected.parentElement.classList].find(c=>c.startsWith(classStart));
+      const nodeUpdate = getClassStartsWith('node_out_node-').slice(9);
+      const nodeUpdateIn = getClassStartsWith('node_in_node-').slice(13);
+      const output_class = getClassStartsWith('output_');
+      const input_class = getClassStartsWith('input_');
       this.connection_selected = null;
       const point = document.createElementNS('http://www.w3.org/2000/svg',"circle");
       point.classList.add("point");
@@ -1131,10 +1150,11 @@ export default class Drawflow {
   }
 
   removeReroutePoint(ele) {
-    const nodeUpdate = ele.parentElement.classList[2].slice(9)
-    const nodeUpdateIn = ele.parentElement.classList[1].slice(13);
-    const output_class = ele.parentElement.classList[3];
-    const input_class = ele.parentElement.classList[4];
+    const getClassStartsWith = (classStart) => [...ele.parentElement.classList].find(c=>c.startsWith(classStart));
+    const nodeUpdate = getClassStartsWith("node_out_node-").slice(9);
+    const nodeUpdateIn = getClassStartsWith("node_in_node-").slice(13);
+    const output_class = getClassStartsWith("output_");
+    const input_class = getClassStartsWith("input_");
 
     let numberPointPosition = Array.from(ele.parentElement.children).indexOf(ele);
     const nodeId = nodeUpdate.slice(5);
@@ -1237,22 +1257,24 @@ export default class Drawflow {
         });
         
         if(comp && comp.inputs && Object.entries(comp.inputs).length>0){
-          for (const [inputkey,inputname] of Object.entries(comp.inputs)) {
+          for (const [inputkey,inputvalue] of Object.entries(comp.inputs)) {
             const input = document.createElement('div');
             input.classList.add("input");
             input.classList.add("input_"+inputkey);
-            input.style = `--input-name:"${inputname}";`;
-            json_inputs["input_"+inputkey] = { "connections": [], 'name': inputname };
+            input.classList.add("io_"+inputvalue.type);
+            input.style = `--input-name:"${inputvalue.name}";`;
+            json_inputs["input_"+inputkey] = { "connections": [], ...inputvalue };
             inputs.appendChild(input);
           }
         }
         if(comp && comp.outputs && Object.entries(comp.outputs).length>0){
-          for (const [outputkey,outputname] of Object.entries(comp.outputs)) {
+          for (const [outputkey,outputvalue] of Object.entries(comp.outputs)) {
             const output = document.createElement('div');
             output.classList.add("output");
             output.classList.add("output_"+outputkey);
-            output.style = `--output-name:"${outputname}";`;
-            json_outputs["output_"+outputkey] = { "connections": [], 'name': outputname };
+            output.classList.add("io_"+outputvalue.type);
+            output.style = `--output-name:"${outputvalue.name}";`;
+            json_outputs["output_"+outputkey] = { "connections": [], ...outputvalue };
             outputs.appendChild(output);
           }
         }
@@ -1646,18 +1668,6 @@ export default class Drawflow {
     nodeUpdates =  new Set(nodeUpdates.map(e => JSON.stringify(e)));
     nodeUpdates = Array.from(nodeUpdates).map(e => JSON.parse(e));
 
-    if(this.module === moduleName) {
-      const eles = this.container.querySelectorAll("#node-"+id +" .inputs .input");
-      eles.forEach((item, i) => {
-        const id_class = item.classList[1].slice(6);
-        if(parseInt(input_class_id) < parseInt(id_class)) {
-          item.classList.remove('input_'+id_class);
-          item.classList.add('input_'+(id_class-1));
-        }
-      });
-
-    }
-
     nodeUpdates.forEach((itemx, i) => {
       this.drawflow.drawflow[moduleName].data[itemx.node].outputs[itemx.input].connections.forEach((itemz, g) => {
           if(itemz.node == id) {
@@ -1717,18 +1727,6 @@ export default class Drawflow {
     nodeUpdates =  new Set(nodeUpdates.map(e => JSON.stringify(e)));
     nodeUpdates = Array.from(nodeUpdates).map(e => JSON.parse(e));
 
-    if(this.module === moduleName) {
-      const eles = this.container.querySelectorAll("#node-"+id +" .outputs .output");
-      eles.forEach((item, i) => {
-        const id_class = item.classList[1].slice(7);
-        if(parseInt(output_class_id) < parseInt(id_class)) {
-          item.classList.remove('output_'+id_class);
-          item.classList.add('output_'+(id_class-1));
-        }
-      });
-
-    }
-
     nodeUpdates.forEach((itemx, i) => {
       this.drawflow.drawflow[moduleName].data[itemx.node].inputs[itemx.output].connections.forEach((itemz, g) => {
           if(itemz.node == id) {
@@ -1767,19 +1765,19 @@ export default class Drawflow {
 
   removeConnection() {
     if(this.connection_selected != null) {
-      var listclass = this.connection_selected.parentElement.classList;
+      const getClassStartsWith = (classStart) => [...this.connection_selected.parentElement.classList].find(c=>c.startsWith(classStart));
       this.connection_selected.parentElement.remove();
       //console.log(listclass);
-      var index_out = this.drawflow.drawflow[this.module].data[listclass[2].slice(14)].outputs[listclass[3]].connections.findIndex(function(item,i) {
-        return item.node === listclass[1].slice(13) && item.output === listclass[4]
+      var index_out = this.drawflow.drawflow[this.module].data[getClassStartsWith("node_out_node-").slice(14)].outputs[getClassStartsWith("output_")].connections.findIndex(function(item,i) {
+        return item.node === getClassStartsWith("node_in_node-").slice(13) && item.output === getClassStartsWith("input_")
       });
-      this.drawflow.drawflow[this.module].data[listclass[2].slice(14)].outputs[listclass[3]].connections.splice(index_out,1);
+      this.drawflow.drawflow[this.module].data[getClassStartsWith("node_out_node-").slice(14)].outputs[getClassStartsWith("output_")].connections.splice(index_out,1);
 
-      var index_in = this.drawflow.drawflow[this.module].data[listclass[1].slice(13)].inputs[listclass[4]].connections.findIndex(function(item,i) {
-        return item.node === listclass[2].slice(14) && item.input === listclass[3]
+      var index_in = this.drawflow.drawflow[this.module].data[getClassStartsWith("node_in_node-").slice(13)].inputs[getClassStartsWith("input_")].connections.findIndex(function(item,i) {
+        return item.node === getClassStartsWith("node_out_node-").slice(14) && item.input === getClassStartsWith("output_")
       });
-      this.drawflow.drawflow[this.module].data[listclass[1].slice(13)].inputs[listclass[4]].connections.splice(index_in,1);
-      this.dispatch('connectionRemoved', { output_id: listclass[2].slice(14), input_id: listclass[1].slice(13), output_class: listclass[3], input_class: listclass[4] } );
+      this.drawflow.drawflow[this.module].data[getClassStartsWith("node_in_node-").slice(13)].inputs[getClassStartsWith("input_")].connections.splice(index_in,1);
+      this.dispatch('connectionRemoved', { output_id: getClassStartsWith("node_out_node-").slice(14), input_id: getClassStartsWith("node_in_node-").slice(13), output_class: getClassStartsWith("output_"), input_class: getClassStartsWith("input_") } );
       this.connection_selected = null;
     }
   }
@@ -1828,41 +1826,40 @@ export default class Drawflow {
 
     const elemsOut = this.container.querySelectorAll(`.${idSearchOut}`);
     for(var i = elemsOut.length-1; i >= 0; i--) {
-      var listclass = elemsOut[i].classList;
+      const getClassStartsWith = (classStart) => [...elemsOut[i].classList].find(c=>c.startsWith(classStart));
 
-      var index_in = this.drawflow.drawflow[this.module].data[listclass[1].slice(13)].inputs[listclass[4]].connections.findIndex(function(item,i) {
-        return item.node === listclass[2].slice(14) && item.input === listclass[3]
+      var index_in = this.drawflow.drawflow[this.module].data[getClassStartsWith("node_in_node-").slice(13)].inputs[getClassStartsWith("input_")].connections.findIndex(function(item,i) {
+        return item.node === getClassStartsWith("node_out_node-").slice(14) && item.input === getClassStartsWith("output_")
       });
-      this.drawflow.drawflow[this.module].data[listclass[1].slice(13)].inputs[listclass[4]].connections.splice(index_in,1);
+      this.drawflow.drawflow[this.module].data[getClassStartsWith("node_in_node-").slice(13)].inputs[getClassStartsWith("input_")].connections.splice(index_in,1);
 
-      var index_out = this.drawflow.drawflow[this.module].data[listclass[2].slice(14)].outputs[listclass[3]].connections.findIndex(function(item,i) {
-        return item.node === listclass[1].slice(13) && item.output === listclass[4]
+      var index_out = this.drawflow.drawflow[this.module].data[getClassStartsWith("node_out_node-").slice(14)].outputs[getClassStartsWith("output_")].connections.findIndex(function(item,i) {
+        return item.node === getClassStartsWith("node_in_node-").slice(13) && item.output === getClassStartsWith("input_")
       });
-      this.drawflow.drawflow[this.module].data[listclass[2].slice(14)].outputs[listclass[3]].connections.splice(index_out,1);
+      this.drawflow.drawflow[this.module].data[getClassStartsWith("node_out_node-").slice(14)].outputs[getClassStartsWith("output_")].connections.splice(index_out,1);
 
       elemsOut[i].remove();
 
-      this.dispatch('connectionRemoved', { output_id: listclass[2].slice(14), input_id: listclass[1].slice(13), output_class: listclass[3], input_class: listclass[4] } );
+      this.dispatch('connectionRemoved', { output_id: getClassStartsWith("node_out_node-").slice(14), input_id: getClassStartsWith("node_in_node-").slice(13), output_class: getClassStartsWith("output_"), input_class: getClassStartsWith("input_") } );
     }
 
     const elemsIn = this.container.querySelectorAll(`.${idSearchIn}`);
     for(var i = elemsIn.length-1; i >= 0; i--) {
+      const getClassStartsWith = (classStart) => [...elemsIn[i].classList].find(c=>c.startsWith(classStart));
 
-      var listclass = elemsIn[i].classList;
-
-      var index_out = this.drawflow.drawflow[this.module].data[listclass[2].slice(14)].outputs[listclass[3]].connections.findIndex(function(item,i) {
-        return item.node === listclass[1].slice(13) && item.output === listclass[4]
+      var index_out = this.drawflow.drawflow[this.module].data[getClassStartsWith("node_out_node-").slice(14)].outputs[getClassStartsWith("output_")].connections.findIndex(function(item,i) {
+        return item.node === getClassStartsWith("node_in_node-").slice(13) && item.output === getClassStartsWith("input_")
       });
-      this.drawflow.drawflow[this.module].data[listclass[2].slice(14)].outputs[listclass[3]].connections.splice(index_out,1);
+      this.drawflow.drawflow[this.module].data[getClassStartsWith("node_out_node-").slice(14)].outputs[getClassStartsWith("output_")].connections.splice(index_out,1);
 
-      var index_in = this.drawflow.drawflow[this.module].data[listclass[1].slice(13)].inputs[listclass[4]].connections.findIndex(function(item,i) {
-        return item.node === listclass[2].slice(14) && item.input === listclass[3]
+      var index_in = this.drawflow.drawflow[this.module].data[getClassStartsWith("node_in_node-").slice(13)].inputs[getClassStartsWith("input_")].connections.findIndex(function(item,i) {
+        return item.node === getClassStartsWith("node_out_node-").slice(14) && item.input === getClassStartsWith("output_")
       });
-      this.drawflow.drawflow[this.module].data[listclass[1].slice(13)].inputs[listclass[4]].connections.splice(index_in,1);
+      this.drawflow.drawflow[this.module].data[getClassStartsWith("node_in_node-").slice(13)].inputs[getClassStartsWith("input_")].connections.splice(index_in,1);
 
       elemsIn[i].remove();
 
-      this.dispatch('connectionRemoved', { output_id: listclass[2].slice(14), input_id: listclass[1].slice(13), output_class: listclass[3], input_class: listclass[4] } );
+      this.dispatch('connectionRemoved', { output_id: getClassStartsWith("node_out_node-").slice(14), input_id: getClassStartsWith("node_in_node-").slice(13), output_class: getClassStartsWith("output_"), input_class: getClassStartsWith("input_") } );
     }
   }
 
@@ -1988,4 +1985,13 @@ export default class Drawflow {
         var uuid = s.join("");
         return uuid;
     }
+    
+}
+
+const isOutputCompatible = (inType, outType) => {
+  return (inType === outType)
+      || (outType != "EXEC" && (
+          (inType === "ANY" && !outType.endsWith("ARR"))
+          || (inType === "ANYARR" && outType.endsWith("ARR"))
+      ));
 }
