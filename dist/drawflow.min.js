@@ -1990,7 +1990,8 @@ export default class Drawflow {
 
 const isOutputCompatible = (inType, outType) => {
   return (inType === outType)
-      || (outType != "EXEC" && (
+      || (outType == "EXECLOOP" && inType=="EXEC")
+      || (outType != "EXEC" && outType != "EXECLOOP" && (
           (inType === "ANY" && !outType.endsWith("ARR"))
           || (inType === "ANYARR" && outType.endsWith("ARR"))
       ));
