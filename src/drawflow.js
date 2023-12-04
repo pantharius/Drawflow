@@ -1253,7 +1253,7 @@ export default class Drawflow {
       try {
         let comp = new NodeComponent({
           target: content,
-          props: {...node.props,nodeid:newNodeId}
+          props: {...node.props,nodeid:newNodeId,datas:node.data}
         });
         
         if(comp && comp.inputs && Object.entries(comp.inputs).length>0){
@@ -1296,40 +1296,42 @@ export default class Drawflow {
       content.appendChild(wrapper.$el);
     }
 
-    Object.entries(data).forEach(function (key, value) {
-      if(typeof key[1] === "object") {
-        insertObjectkeys(null, key[0], key[0]);
-      } else {
-        var elems = content.querySelectorAll('[df-'+key[0]+']');
-          for(var i = 0; i < elems.length; i++) {
-            elems[i].value = key[1];
-            if(elems[i].isContentEditable) {
-              elems[i].innerText = key[1];
-            }
-          }
-      }
-    })
-
-    function insertObjectkeys(object, name, completname) {
-      if(object === null) {
-        var object = data[name];
-      } else {
-        var object = object[name]
-      }
-      if(object !== null) {
-        Object.entries(object).forEach(function (key, value) {
-          if(typeof key[1] === "object") {
-            insertObjectkeys(object, key[0], completname+'-'+key[0]);
-          } else {
-            var elems = content.querySelectorAll('[df-'+completname+'-'+key[0]+']');
-              for(var i = 0; i < elems.length; i++) {
-                elems[i].value = key[1];
-                if(elems[i].isContentEditable) {
-                  elems[i].innerText = key[1];
-                }
+    if(typeof typenode === "boolean"){
+      Object.entries(data).forEach(function (key, value) {
+        if(typeof key[1] === "object") {
+          insertObjectkeys(null, key[0], key[0]);
+        } else {
+          var elems = content.querySelectorAll('[df-'+key[0]+']');
+            for(var i = 0; i < elems.length; i++) {
+              elems[i].value = key[1];
+              if(elems[i].isContentEditable) {
+                elems[i].innerText = key[1];
               }
-          }
-        });
+            }
+        }
+      })
+  
+      function insertObjectkeys(object, name, completname) {
+        if(object === null) {
+          var object = data[name];
+        } else {
+          var object = object[name]
+        }
+        if(object !== null) {
+          Object.entries(object).forEach(function (key, value) {
+            if(typeof key[1] === "object") {
+              insertObjectkeys(object, key[0], completname+'-'+key[0]);
+            } else {
+              var elems = content.querySelectorAll('[df-'+completname+'-'+key[0]+']');
+                for(var i = 0; i < elems.length; i++) {
+                  elems[i].value = key[1];
+                  if(elems[i].isContentEditable) {
+                    elems[i].innerText = key[1];
+                  }
+                }
+            }
+          });
+        }
       }
     }
     node.appendChild(inputs);
@@ -1381,6 +1383,7 @@ export default class Drawflow {
       const input = document.createElement('div');
       input.classList.add("input");
       input.classList.add(input_item);
+      input.classList.add("io_"+input_value.type);
       input.style = `--input-name:"${input_value.name}";`;
       inputs.appendChild(input);
       
@@ -1396,6 +1399,7 @@ export default class Drawflow {
         connection.classList.add("node_out_node-"+conn.node);
         connection.classList.add(conn.input);
         connection.classList.add(input_item);
+        connection.classList.add("io_"+input_value.type);
 
         connection.appendChild(path);
         precanvas.appendChild(connection);
@@ -1407,6 +1411,7 @@ export default class Drawflow {
       const output = document.createElement('div');
       output.classList.add("output");
       output.classList.add(outputkey);
+      output.classList.add("io_"+outputvalue.type);
       output.style = `--output-name:"${outputvalue.name}";`;
       outputs.appendChild(output);
     }
@@ -1424,7 +1429,7 @@ export default class Drawflow {
       try {
         new NodeComponent({
           target: content,
-          props: {...node.props,nodeid:dataNode.id}
+          props: {...node.props,nodeid:dataNode.id,datas:dataNode.data}
         });
       } catch (e) { /* ... */ }
     } else if(parseInt(this.render.version) === 3 ) {
@@ -1443,42 +1448,45 @@ export default class Drawflow {
       content.appendChild(wrapper.$el);
     }
 
-    Object.entries(dataNode.data).forEach(function (key, value) {
-      if(typeof key[1] === "object") {
-        insertObjectkeys(null, key[0], key[0]);
-      } else {
-        var elems = content.querySelectorAll('[df-'+key[0]+']');
-          for(var i = 0; i < elems.length; i++) {
-            elems[i].value = key[1];
-            if(elems[i].isContentEditable) {
-              elems[i].innerText = key[1];
-            }
-          }
-      }
-    })
-
-    function insertObjectkeys(object, name, completname) {
-      if(object === null) {
-        var object = dataNode.data[name];
-      } else {
-        var object = object[name]
-      }
-      if(object !== null) {
-        Object.entries(object).forEach(function (key, value) {
-          if(typeof key[1] === "object") {
-            insertObjectkeys(object, key[0], completname+'-'+key[0]);
-          } else {
-            var elems = content.querySelectorAll('[df-'+completname+'-'+key[0]+']');
-              for(var i = 0; i < elems.length; i++) {
-                elems[i].value = key[1];
-                if(elems[i].isContentEditable) {
-                  elems[i].innerText = key[1];
-                }
+    if(typeof typenode === "boolean"){
+      Object.entries(dataNode.data).forEach(function (key, value) {
+        if(typeof key[1] === "object") {
+          insertObjectkeys(null, key[0], key[0]);
+        } else {
+          var elems = content.querySelectorAll('[df-'+key[0]+']');
+            for(var i = 0; i < elems.length; i++) {
+              elems[i].value = key[1];
+              if(elems[i].isContentEditable) {
+                elems[i].innerText = key[1];
               }
-          }
-        });
+            }
+        }
+      })
+
+      function insertObjectkeys(object, name, completname) {
+        if(object === null) {
+          var object = dataNode.data[name];
+        } else {
+          var object = object[name]
+        }
+        if(object !== null) {
+          Object.entries(object).forEach(function (key, value) {
+            if(typeof key[1] === "object") {
+              insertObjectkeys(object, key[0], completname+'-'+key[0]);
+            } else {
+              var elems = content.querySelectorAll('[df-'+completname+'-'+key[0]+']');
+                for(var i = 0; i < elems.length; i++) {
+                  elems[i].value = key[1];
+                  if(elems[i].isContentEditable) {
+                    elems[i].innerText = key[1];
+                  }
+                }
+            }
+          });
+        }
       }
     }
+
     node.appendChild(inputs);
     node.appendChild(content);
     node.appendChild(outputs);
@@ -1554,7 +1562,7 @@ export default class Drawflow {
   updateNodeDataFromId(id, data) {
     var moduleName = this.getModuleFromNodeId(id)
     this.drawflow.drawflow[moduleName].data[id].data = data;
-    if(this.module === moduleName) {
+    if(this.module === moduleName && typeof this.drawflow.drawflow[moduleName].data[id].typenode === "boolean") {
       const content = this.container.querySelector('#node-'+id);
 
       Object.entries(data).forEach(function (key, value) {
