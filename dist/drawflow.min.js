@@ -2001,6 +2001,7 @@ const isOutputCompatible = (inType, outType) => {
       || (outType == "EXECLOOP" && inType=="EXEC")
       || (outType != "EXEC" && outType != "EXECLOOP" && (
           (inType === "ANY" && !outType.endsWith("ARR"))
+          || (inType === "ALL")
           || (inType === "ANYARR" && outType.endsWith("ARR"))
       ));
 }
