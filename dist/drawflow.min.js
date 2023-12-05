@@ -199,123 +199,114 @@ export default class Drawflow {
         this.ele_selected = e.target.closest(".drawflow_content_node").parentElement;
       }
     }
-    switch (this.ele_selected.classList[0]) {
-      case 'drawflow-node':
-        if(this.node_selected != null) {
-          this.node_selected.classList.remove("selected");
-          if(this.node_selected != this.ele_selected) {
-            this.dispatch('nodeUnselected', true);
-          }
-        }
-        if(this.connection_selected != null) {
-          this.connection_selected.classList.remove("selected");
-          this.removeReouteConnectionSelected();
-          this.connection_selected = null;
-        }
+    let sel_classlist = [...this.ele_selected.classList];
+    if(sel_classlist.includes('drawflow-node')){
+      if(this.node_selected != null) {
+        this.node_selected.classList.remove("selected");
         if(this.node_selected != this.ele_selected) {
-          this.dispatch('nodeSelected', this.ele_selected.id.slice(5));
-        }
-        this.node_selected = this.ele_selected;
-        this.node_selected.classList.add("selected");
-        if(!this.draggable_inputs) {
-          if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT' && e.target.hasAttribute('contenteditable') !== true) {
-            this.drag = true;
-          }
-        } else {
-          if(e.target.tagName !== 'SELECT') {
-            this.drag = true;
-          }
-        }
-        break;
-      case 'output':
-        this.connection = true;
-        if(this.node_selected != null) {
-          this.node_selected.classList.remove("selected");
-          this.node_selected = null;
           this.dispatch('nodeUnselected', true);
         }
-        if(this.connection_selected != null) {
-          this.connection_selected.classList.remove("selected");
-          this.removeReouteConnectionSelected();
-          this.connection_selected = null;
+      }
+      if(this.connection_selected != null) {
+        this.connection_selected.classList.remove("selected");
+        this.removeReouteConnectionSelected();
+        this.connection_selected = null;
+      }
+      if(this.node_selected != this.ele_selected) {
+        this.dispatch('nodeSelected', this.ele_selected.id.slice(5));
+      }
+      this.node_selected = this.ele_selected;
+      this.node_selected.classList.add("selected");
+      if(!this.draggable_inputs) {
+        if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT' && e.target.hasAttribute('contenteditable') !== true) {
+          this.drag = true;
         }
-        this.drawConnection(e.target);
-        break;
-      case 'parent-drawflow':
-        if(this.node_selected != null) {
-          this.node_selected.classList.remove("selected");
-          this.node_selected = null;
-          this.dispatch('nodeUnselected', true);
+      } else {
+        if(e.target.tagName !== 'SELECT') {
+          this.drag = true;
         }
-        if(this.connection_selected != null) {
-          this.connection_selected.classList.remove("selected");
-          this.removeReouteConnectionSelected();
-          this.connection_selected = null;
+      }
+    }else if(sel_classlist.includes('output')){
+      this.connection = true;
+      if(this.node_selected != null) {
+        this.node_selected.classList.remove("selected");
+        this.node_selected = null;
+        this.dispatch('nodeUnselected', true);
+      }
+      if(this.connection_selected != null) {
+        this.connection_selected.classList.remove("selected");
+        this.removeReouteConnectionSelected();
+        this.connection_selected = null;
+      }
+      this.drawConnection(e.target);
+    }else if(sel_classlist.includes('parent-drawflow')){
+      if(this.node_selected != null) {
+        this.node_selected.classList.remove("selected");
+        this.node_selected = null;
+        this.dispatch('nodeUnselected', true);
+      }
+      if(this.connection_selected != null) {
+        this.connection_selected.classList.remove("selected");
+        this.removeReouteConnectionSelected();
+        this.connection_selected = null;
+      }
+      this.editor_selected = true;
+    }else if(sel_classlist.includes('drawflow')){
+      if(this.node_selected != null) {
+        this.node_selected.classList.remove("selected");
+        this.node_selected = null;
+        this.dispatch('nodeUnselected', true);
+      }
+      if(this.connection_selected != null) {
+        this.connection_selected.classList.remove("selected");
+        this.removeReouteConnectionSelected();
+        this.connection_selected = null;
+      }
+      this.editor_selected = true;
+    }else if(sel_classlist.includes('main-path')){
+      if(this.node_selected != null) {
+        this.node_selected.classList.remove("selected");
+        this.node_selected = null;
+        this.dispatch('nodeUnselected', true);
+      }
+      if(this.connection_selected != null) {
+        this.connection_selected.classList.remove("selected");
+        this.removeReouteConnectionSelected();
+        this.connection_selected = null;
+      }
+      this.connection_selected = this.ele_selected;
+      this.connection_selected.classList.add("selected");
+      const getClassStartsWith = (classStart) => [...this.connection_selected.parentElement.classList].find(c=>c.startsWith(classStart));
+      if(getClassStartsWith('')){
+        this.dispatch('connectionSelected', { output_id: getClassStartsWith("node_out_node-").slice(14), input_id: getClassStartsWith("node_in_node-").slice(13), output_class: getClassStartsWith("output_"), input_class: getClassStartsWith("input_") });
+        if(this.reroute_fix_curvature) {
+          this.connection_selected.parentElement.querySelectorAll(".main-path").forEach((item, i) => {
+            item.classList.add("selected");
+          });
         }
-        this.editor_selected = true;
-        break;
-      case 'drawflow':
-        if(this.node_selected != null) {
-          this.node_selected.classList.remove("selected");
-          this.node_selected = null;
-          this.dispatch('nodeUnselected', true);
-        }
-        if(this.connection_selected != null) {
-          this.connection_selected.classList.remove("selected");
-          this.removeReouteConnectionSelected();
-          this.connection_selected = null;
-        }
-        this.editor_selected = true;
-        break;
-      case 'main-path':
-        if(this.node_selected != null) {
-          this.node_selected.classList.remove("selected");
-          this.node_selected = null;
-          this.dispatch('nodeUnselected', true);
-        }
-        if(this.connection_selected != null) {
-          this.connection_selected.classList.remove("selected");
-          this.removeReouteConnectionSelected();
-          this.connection_selected = null;
-        }
-        this.connection_selected = this.ele_selected;
-        this.connection_selected.classList.add("selected");
-        const getClassStartsWith = (classStart) => [...this.connection_selected.parentElement.classList].find(c=>c.startsWith(classStart));
-        if(getClassStartsWith('')){
-          this.dispatch('connectionSelected', { output_id: getClassStartsWith("node_out_node-").slice(14), input_id: getClassStartsWith("node_in_node-").slice(13), output_class: getClassStartsWith("output_"), input_class: getClassStartsWith("input_") });
-          if(this.reroute_fix_curvature) {
-            this.connection_selected.parentElement.querySelectorAll(".main-path").forEach((item, i) => {
-              item.classList.add("selected");
-            });
-          }
-        }
-      break;
-      case 'point':
-        this.drag_point = true;
-        this.ele_selected.classList.add("selected");
-      break;
-      case 'drawflow-delete':
-        if(this.node_selected ) {
-          this.removeNodeId(this.node_selected.id);
-        }
+      }
+    }else if(sel_classlist.includes('point')){
+      this.drag_point = true;
+      this.ele_selected.classList.add("selected");
+    }else if(sel_classlist.includes('drawflow-delete')){
+      if(this.node_selected ) {
+        this.removeNodeId(this.node_selected.id);
+      }
 
-        if(this.connection_selected) {
-          this.removeConnection();
-        }
+      if(this.connection_selected) {
+        this.removeConnection();
+      }
 
-        if(this.node_selected != null) {
-          this.node_selected.classList.remove("selected");
-          this.node_selected = null;
-          this.dispatch('nodeUnselected', true);
-        }
-        if(this.connection_selected != null) {
-          this.connection_selected.classList.remove("selected");
-          this.removeReouteConnectionSelected();
-          this.connection_selected = null;
-        }
-
-      break;
-      default:
+      if(this.node_selected != null) {
+        this.node_selected.classList.remove("selected");
+        this.node_selected = null;
+        this.dispatch('nodeUnselected', true);
+      }
+      if(this.connection_selected != null) {
+        this.connection_selected.classList.remove("selected");
+        this.removeReouteConnectionSelected();
+        this.connection_selected = null;
+      }
     }
     if (e.type === "touchstart") {
       this.pos_x = e.touches[0].clientX;
@@ -2000,8 +1991,8 @@ const isOutputCompatible = (inType, outType) => {
   return (inType === outType)
       || (outType == "EXECLOOP" && inType=="EXEC")
       || (outType != "EXEC" && outType != "EXECLOOP" && (
-          (inType === "ANY" && !outType.endsWith("ARR"))
+          (inType === "ANY" && !outType.endsWith("_ARR"))
           || (inType === "ALL")
-          || (inType === "ANYARR" && outType.endsWith("ARR"))
+          || (inType === "ANY_ARR" && outType.endsWith("_ARR"))
       ));
 }
