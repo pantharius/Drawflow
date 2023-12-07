@@ -470,7 +470,7 @@ export default class Drawflow {
           if (this.container.querySelectorAll('.connection.node_in_' + input_id + '.node_out_' + output_id + '.' + output_class + '.' + input_class).length === 0) {
 
             let ioclass = [...this.connection_ele.classList].find(c => c.startsWith("io_")).slice(3);
-            if(isOutputCompatible(in_io_class,ioclass)) {
+            if(isOutputCompatible(in_io_class,ioclass) && isOutputFreeOrMultiple(this.drawflow.drawflow[this.module].data[input_id.slice(5)].inputs[input_class].connections,ioclass)) {
               // Conection no exist save connection
 
               this.connection_ele.classList.add("node_in_" + input_id);
@@ -714,7 +714,7 @@ export default class Drawflow {
         const outType = this.drawflow.drawflow[nodeOneModule].data[id_output].outputs[output_class].type;
         const inType = this.drawflow.drawflow[nodeOneModule].data[id_input].inputs[input_class].type;
         
-        if(isOutputCompatible(inType,outType)){
+        if(isOutputCompatible(inType,outType) && isOutputFreeOrMultiple(dataNode.outputs[output_class].connections[checkOutput],outType)){
           //Create Connection
           this.drawflow.drawflow[nodeOneModule].data[id_output].outputs[output_class].connections.push( {"node": id_input.toString(), "output": input_class});
           this.drawflow.drawflow[nodeOneModule].data[id_input].inputs[input_class].connections.push( {"node": id_output.toString(), "input": output_class});
@@ -2004,4 +2004,8 @@ const isOutputCompatible = (inType, outType) => {
           || (inType === "ALL")
           || (inType === "ANY_ARR" && outType.endsWith("_ARR"))
       ));
+}
+
+const isOutputFreeOrMultiple = (connections,outType) => {
+  return connections.length==0 || outType === "EXEC" || outType == "EXECLOOP";
 }
