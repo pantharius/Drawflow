@@ -1605,21 +1605,20 @@ export default class Drawflow {
     }
   }
 
-  addNodeInput(id) {
+  addNodeInput(id, inputkey, inputvalue) {
     var moduleName = this.getModuleFromNodeId(id)
-    const infoNode = this.getNodeFromId(id)
-    const numInputs = Object.keys(infoNode.inputs).length;
     if(this.module === moduleName) {
       //Draw input
       const input = document.createElement('div');
       input.classList.add("input");
-      input.classList.add("input_"+(numInputs+1));
+      input.classList.add("input_"+inputkey);
+      input.classList.add("io_"+inputvalue.type);
+      input.style = `--input-name:"${inputvalue.name}";`;
       const parent = this.container.querySelector('#node-'+id+' .inputs');
       parent.appendChild(input);
       this.updateConnectionNodes('node-'+id);
-
     }
-    this.drawflow.drawflow[moduleName].data[id].inputs["input_"+(numInputs+1)] = { "connections": []};
+    this.drawflow.drawflow[moduleName].data[id].inputs["input_"+inputkey] = { "connections": [], ...inputvalue };
   }
 
   addNodeOutput(id) {
@@ -1659,20 +1658,17 @@ export default class Drawflow {
     delete this.drawflow.drawflow[moduleName].data[id].inputs[input_class];
 
     // Update connection
-    const connections = [];
-    const connectionsInputs = this.drawflow.drawflow[moduleName].data[id].inputs
-    Object.keys(connectionsInputs).map(function(key, index) {
-      connections.push(connectionsInputs[key]);
-    });
+    const connectionsInputs = {...this.drawflow.drawflow[moduleName].data[id].inputs};
+
     this.drawflow.drawflow[moduleName].data[id].inputs = {};
     const input_class_id = input_class.slice(6);
     let nodeUpdates = [];
-    connections.forEach((item, i) => {
+    for (const [key,item] of Object.entries(connectionsInputs)) {
       item.connections.forEach((itemx, f) => {
         nodeUpdates.push(itemx);
       });
-      this.drawflow.drawflow[moduleName].data[id].inputs['input_'+ (i+1)] = item;
-    });
+      this.drawflow.drawflow[moduleName].data[id].inputs[key] = item;
+    }
     nodeUpdates =  new Set(nodeUpdates.map(e => JSON.stringify(e)));
     nodeUpdates = Array.from(nodeUpdates).map(e => JSON.parse(e));
 
