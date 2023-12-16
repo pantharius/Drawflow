@@ -189,7 +189,7 @@ cursor: pointer;
 
 /* Editing Drawflow */
 
-.drawflow .drawflow-node {
+#drawflow .drawflow-node {
   background: var(--background-color);
   border: 1px solid var(--border-color);
   -webkit-box-shadow: 0 2px 15px 2px var(--border-color);
@@ -198,43 +198,43 @@ cursor: pointer;
   width: 200px;
 }
 
-.drawflow .drawflow-node.selected  {
+#drawflow .drawflow-node.selected  {
   background: white;
   border: 1px solid #4ea9ff;
   -webkit-box-shadow: 0 2px 20px 2px #4ea9ff;
   box-shadow: 0 2px 20px 2px #4ea9ff;
 }
 
-.drawflow .drawflow-node.selected .title-box {
+#drawflow .drawflow-node.selected .title-box {
   color: #22598c;
   /*border-bottom: 1px solid #4ea9ff;*/
 }
 
-.drawflow .connection .main-path {
+#drawflow .connection .main-path {
   stroke: #4ea9ff;
   stroke-width: 3px;
 }
 
-.drawflow .drawflow-node .input, .drawflow .drawflow-node .output {
+#drawflow .drawflow-node .input, #drawflow .drawflow-node .output {
   height: 15px;
   width: 15px;
   border: 2px solid var(--border-color);
 }
 
-.drawflow .drawflow-node .input:hover, .drawflow .drawflow-node .output:hover {
+#drawflow .drawflow-node .input:hover, #drawflow .drawflow-node .output:hover {
   background: #4ea9ff;
 }
 
-.drawflow .drawflow-node .output {
+#drawflow .drawflow-node .output {
   right: 10px;
 }
 
-.drawflow .drawflow-node .input {
+#drawflow .drawflow-node .input {
   left: -10px;
   background: white;
 }
 
-.drawflow > .drawflow-delete {
+#drawflow .drawflow-delete {
   border: 2px solid #43b993;
   background: white;
   color: #43b993;
@@ -258,7 +258,7 @@ cursor: pointer;
   border-radius: 4px 4px 0px 0px;
   padding-left: 10px;
 }
-.drawflow .title-box svg {
+#drawflow .title-box svg {
   position: initial;
 }
 .drawflow-node .box {
@@ -270,6 +270,7 @@ cursor: pointer;
 .drawflow-node .box p {
   margin-top: 5px;
   margin-bottom: 5px;
+  text-wrap: nowrap;
 }
 
 .drawflow-node.welcome {
@@ -312,14 +313,14 @@ cursor: pointer;
   background: blue;
 }
 
-.drawflow .connection .point {
+#drawflow .connection .point {
   stroke: var(--border-color);
   stroke-width: 2;
   fill: white;
   
 }
 
-.drawflow .connection .point.selected, .drawflow .connection .point:hover {
+#drawflow .connection .point.selected, #drawflow .connection .point:hover {
   fill: #4ea9ff;
 }
 
