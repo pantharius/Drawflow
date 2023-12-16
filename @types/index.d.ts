@@ -232,6 +232,12 @@ export default class Drawflow {
     parent: object;
 
     /**
+     * The button number of the mouse pushed last time
+     * (1=LEFT, 2=MIDDLE, 3=RIGHT)
+     */
+    mouseclick: number;
+
+    /**
      * registered nodes for reuse.
      */
     noderegister: object;
